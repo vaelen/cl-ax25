@@ -32,6 +32,8 @@
            :fcs
            :frame-to-bytes
            :string-to-bytes
+           :add-flag
+           :stuff-bits
            :write-frame
            :write-frame-to-file
            :test-suite))
