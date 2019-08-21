@@ -15,4 +15,6 @@ Usage:
       :destination "MAJTOM"
       :data (ax25:string-to-bytes "Ground Control to Major Tom")))
   "test.bin")
+
+(ax25:read-frames-from-file "test.bin" #'ax25:print-frame-handler)
 ```
