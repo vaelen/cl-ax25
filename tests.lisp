@@ -44,7 +44,7 @@
   (let ((data (string-to-bytes "Andrew")))
     (do-test "CRC16 Multiple Characters: Andrew" '#xF3C3 (crc16 data))
     (do-test "FCS   Multiple Characters: Andrew" '(#xC3 #xF3) (fcs data)))
-  (do-test "Bit Stuffing" '((204 23 248) 2 2 1) (stuff-bits '(#b11001100 #b00001111 #b11111100)))
+  (do-test "Bit Stuffing" '((#xCC #x17 #xF0 #xF9) 2 3 0) (stuff-bits '(#b11001100 #b00001111 #b11111000 #b01111110)))
   (do-test "Bit Stuffing - Continued" '((#xBE) 4 3 1) (let ((o (stuff-bits '(#b11001100 #b00001111 #b11111100))))
                                                               (stuff-bits '(#b10011111) nil nil (cadr o) (caddr o) (cadddr o))))
   (do-test "Add Flag" '(126 0 0) (add-flag))
