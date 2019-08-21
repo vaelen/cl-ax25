@@ -74,21 +74,18 @@
      ;; Finished with the new byte
      (push new-byte result)
      (stuff-bits bytes current-byte current-bit 0 0 one-count result))
+    ((= one-count 5)
+     ;; Need to stuff in a zero in there
+     (setf (ldb (byte 1 new-bit) new-byte) 0)
+     (stuff-bits bytes current-byte current-bit new-byte (+ 1 new-bit) 0 result))
     ((= (ldb (byte 1 current-bit) current-byte) 0)
      ;; Next bit is a zero, add it and reset the one count
      (setf (ldb (byte 1 new-bit) new-byte) 0)
      (stuff-bits bytes current-byte (+ 1 current-bit) new-byte (+ 1 new-bit) 0 result))
     ('t
      ;; Next bit is a one
-     (cond
-       ((= one-count 5)
-        ;; Need to stuff in a zero in there
-        (setf (ldb (byte 1 new-bit) new-byte) 0)
-        (stuff-bits bytes current-byte current-bit new-byte (+ 1 new-bit) 0 result))
-       ('t
-        ;; Add the one and increase the one count
-        (setf (ldb (byte 1 new-bit) new-byte) 1)
-        (stuff-bits bytes current-byte (+ 1 current-bit) new-byte (+ 1 new-bit) (+ 1 one-count) result))))))
+     (setf (ldb (byte 1 new-bit) new-byte) 1)
+     (stuff-bits bytes current-byte (+ 1 current-bit) new-byte (+ 1 new-bit) (+ 1 one-count) result))))
 
 (defun add-flag (&optional (start-byte 0) (start-bit 0))
   "Adds an HLDC/AX.25 flag to the given start byte at the given start bit.
