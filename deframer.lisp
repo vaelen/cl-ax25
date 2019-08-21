@@ -57,9 +57,55 @@
      (setf (ldb (byte 1 new-bit) new-byte) 1)
      (unstuff-bits bytes current-byte (+ 1 current-bit) new-byte (+ 1 new-bit) (+ 1 one-count) result))))
 
-;; TODO: Implement deframer
-(defun read-frame ()
-  "Reads a frame header from the given byte sequence"
-  (make-frame)
-)
+(defun read-frames (in frame-handler)
+  "Reads frames from the input stream and calls frame-handler for each frame read."
+  (let ((new-byte 0)
+        (new-bit 0)
+        (last-8-bits 0)
+        (in-frame nil)
+        (result '()))
+    (flet ((push-byte ()
+             ;; Push new byte onto results
+             (push new-byte result)
+             ;; Reset values
+             (setf new-byte 0)
+             (setf new-bit 0))
+           (call-handler ()
+             (when result
+               ;; TODO: Parse frame header, check FCS
+               ;; Unstuff bits and call frame handler
+               (print "Calling Handler")
+               (funcall frame-handler (unstuff-bits (reverse result)))
+               ;; Clear results
+               (setf result '()))))
+      (do ((byte (read-byte in nil)
+                 (read-byte in nil)))
+          ((not byte))
+        (when byte
+          (loop for bit upto 7 do
+            (progn
+              (when in-frame
+                ;; Copy next bit into result byte
+                (setf (ldb (byte 1 new-bit) new-byte) (ldb (byte 1 bit) byte))
+                (setf new-bit (+ 1 new-bit))
+                (if (= 8 new-bit) (push-byte)))
+              ;; Shift 8 bit window
+              (setf last-8-bits (ash last-8-bits -1))
+              ;; Add current bit to 8 bit window
+              (setf (ldb (byte 1 7) last-8-bits) (ldb (byte 1 bit) byte))
+              ;; Check 8 bit window for flag. (this works because the flag is symetrical)
+              (when (= *flag* last-8-bits)
+                (setf in-frame (not in-frame))
+                (if (not (= 0 new-bit)) (push-byte))
+                (call-handler)))))))))
 
+(defun read-frames-from-file (filename frame-handler)
+  "Read AX.25 frames from a file and call frame-handler for each frame"
+  (with-open-file (in filename
+                       :direction :input
+                       :element-type '(unsigned-byte 8))
+    (read-frames in frame-handler)))
+
+(defun print-frame-handler (frame)
+  "This frame handler prints out the frame contents to standard out"
+  (format 't "~&~{~c~}" (mapcar #'code-char frame)))

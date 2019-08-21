@@ -40,6 +40,9 @@
            :write-frames
            :write-raw-frame-to-file
            :write-frames-to-file
+           :read-frames
+           :read-frames-from-file
+           :print-frame-handler
            :test-suite))
 
 (in-package :ax25)
