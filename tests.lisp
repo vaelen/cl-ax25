@@ -49,6 +49,7 @@
                                                               (stuff-bits '(#b10011111) nil nil (cadr o) (caddr o) (cadddr o))))
   (do-test "Add Flag" '(126 0 0) (add-flag))
   (do-test "Add Flag - Continued" '(239 7 4) (add-flag '#b00001111 4))
+  (do-test "Bit Unstuffing" '(#b11001100 #b00001111 #b11111000 #b01111110) (unstuff-bits '(#xCC #x17 #xF0 #xF9 #x02)))
   (format 't "~&Finished AX.25 Test Suite"))
 
 

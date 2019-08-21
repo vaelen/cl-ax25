@@ -35,6 +35,7 @@
            :string-to-bytes
            :add-flag
            :stuff-bits
+           :unstuff-bits
            :write-raw-frame
            :write-frames
            :write-raw-frame-to-file
