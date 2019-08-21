@@ -8,10 +8,11 @@ Usage:
 ```lisp
 (require :ax25)
 
-(ax25:write-frame-to-file
-  (ax25:make-frame
-    :source "EARTH"
-    :destination "SPACE"
-    :data (ax25:string-to-bytes "Ground Control to Major Tom"))
+(ax25:write-frames-to-file
+  (list
+    (ax25:make-frame
+      :source "GRDCTL"
+      :destination "MAJTOM"
+      :data (ax25:string-to-bytes "Ground Control to Major Tom")))
   "test.bin")
 ```
