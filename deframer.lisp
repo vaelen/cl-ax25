@@ -71,11 +71,11 @@
              (setf new-byte 0)
              (setf new-bit 0))
            (call-handler ()
-             (when result
+             (when (rest result)
                ;; TODO: Parse frame header, check FCS
                ;; Unstuff bits and call frame handler
                (print "Calling Handler")
-               (funcall frame-handler (unstuff-bits (reverse result)))
+               (funcall frame-handler (unstuff-bits (reverse (rest result))))
                ;; Clear results
                (setf result '()))))
       (do ((byte (read-byte in nil)
