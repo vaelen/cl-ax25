@@ -28,35 +28,27 @@
   (:use :common-lisp)
   (:export :frame
            :make-frame
+           :*example-frame*
            :crc16
            :fcs
            :frame-to-bytes
            :string-to-bytes
            :add-flag
            :stuff-bits
-           :write-frame
-           :write-frame-to-file
+           :write-raw-frame
+           :write-frames
+           :write-raw-frame-to-file
+           :write-frames-to-file
            :test-suite))
 
 (in-package :ax25)
 
-(defparameter *debug* nil)
-
-(defconstant initial-crc '#xffff)
-(defconstant poly '#x8408)
+(defparameter *flag* '#b01111110)
 
 (defun string-to-bytes (s &key (shift 0))
   "Converts a string to a byte sequence.  Can bit-shift at the same time."
   (flet ((char-to-byte (c) (ash (char-code c) shift)))
     (map 'list #'char-to-byte s)))
-
-(defun lognot-16 (x)
-  "Returns the 16 bit bitwise complement."
-  (declare (type integer x))
-  (loop for i in '(0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15)
-        do (setf (ldb (byte 1 i) x)
-                 (if (logbitp 0 (ldb (byte 1 i) x)) 0 1)))
-  x)
 
 (defstruct frame
   "Represents an AX.25 frame."
@@ -69,30 +61,8 @@
   (data nil)             ; Data should be in bytes
   (fcs #x0000))          ; FCS will be calculated
 
-(defparameter *crc-table*
-  #(#x0000 #x1081 #x2102 #x3183
-    #x4204 #x5285 #x6306 #x7387
-    #x8408 #x9489 #xa50a #xb58b
-    #xc60c #xd68d #xe70e #xf78f))
-
-(defun crc16 (data)
-  "Generate the CRC16/X25 value for the given byte sequence."
-  (let ((crc #xffff))
-    (loop for b across (coerce data 'vector)
-          do (progn
-               (setf crc (logxor (ash crc -4)
-                                 (aref *crc-table*
-                                       (logxor
-                                        (logand crc #xf)
-                                        (logand b #xf)))))
-               (setf crc (logxor (ash crc -4)
-                                 (aref *crc-table*
-                                       (logxor
-                                        (logand crc #xf)
-                                        (ash b -4)))))))
-    (lognot-16 crc)))
-
-(defun fcs (data)
-  "Returns an AX.25 Frame Check Sequence for the given byte sequence."
-  (let ((crc (crc16 data)))
-    (list (ldb (byte 8 0) crc) (ldb (byte 8 8) crc))))
+(defparameter *example-frame*
+  (make-frame
+   :source "GRDCTL"
+   :destination "MAJTOM"
+   :data (string-to-bytes "Ground Control to Major Tom.")))

@@ -35,7 +35,8 @@
   #.(uiop:read-file-string
      (uiop:subpathname *load-pathname* "README.md"))
   :components ((:file "ax25")
-               (:file "framer"  :depends-on ("ax25"))
-               (:file "deframer"  :depends-on ("ax25"))
-               (:file "tests"  :depends-on ("ax25"))))
+               (:file "crc"  :depends-on ("ax25"))
+               (:file "framer"  :depends-on ("ax25" "crc"))
+               (:file "deframer"  :depends-on ("ax25" "crc"))
+               (:file "tests"  :depends-on ("ax25" "crc" "framer" "deframer"))))
 

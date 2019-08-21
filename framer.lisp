@@ -93,18 +93,40 @@
 (defun add-flag (&optional (start-byte 0) (start-bit 0))
   "Adds an HLDC/AX.25 flag to the given start byte at the given start bit.
    Returns a full byte, a remaining byte, and the number of bits in the remaining byte."
-  (setf (ldb (byte 8 start-bit) start-byte) '#b01111110)
+  (setf (ldb (byte 8 start-bit) start-byte) *flag*)
   (list (ldb (byte 8 0) start-byte) (ldb (byte 8 8) start-byte) start-bit))
 
-(defun write-frame (frame out &key (fcs 't))
-  "Write a binary representation of the given AX.25 frame to the given output stream."
+(defun write-raw-frame (frame out &key (fcs 't))
+  "Write a raw AX.25 frame to an output stream without flags or bit stuffing."
   (write-sequence (frame-to-bytes frame :fcs fcs) out))
 
-(defun write-frame-to-file (frame filename &key (fcs 't) (if-exists :supersede))
-  "Write an AX.25 frame to a file."
+(defun write-raw-frame-to-file (frame filename &key (fcs 't) (if-exists :supersede))
+  "Write a raw AX.25 frames to a file without flags or bit stuffing."
   (with-open-file (out filename
                        :direction :output
                        :if-exists if-exists
                        :element-type '(unsigned-byte 8))
-    (write-frame frame out :fcs fcs)))
+    (write-raw-frame frame out :fcs fcs)))
+
+(defun write-frames (frames out)
+  "Write the frames to the output stream, including flags and bit stuffing."
+  (if frames
+      (let ((result '(nil 0 0)))
+        (write-byte *flag* out)
+        (loop for frame in frames do
+          (progn
+            (setf result (stuff-bits (frame-to-bytes frame) nil nil (cadr result) (caddr result)))
+            (write-sequence (car result) out)
+            (setf result (add-flag (cadr result) (caddr result)))
+            (write-byte (car result) out)))
+        (if (not (= 0 (caddr result)))
+            (write-byte (cadr result) out)))))
+
+(defun write-frames-to-file (frames filename &key (if-exists :supersede))
+  "Write AX.25 frames to a file, including flags and bit stuffing."
+  (with-open-file (out filename
+                       :direction :output
+                       :if-exists if-exists
+                       :element-type '(unsigned-byte 8))
+    (write-frames frames out)))
 
