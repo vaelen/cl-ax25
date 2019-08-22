@@ -57,7 +57,7 @@
      (setf (ldb (byte 1 new-bit) new-byte) 1)
      (unstuff-bits bytes current-byte (+ 1 current-bit) new-byte (+ 1 new-bit) (+ 1 one-count) result))))
 
-(defun read-frames (in frame-handler)
+(defun read-frames (in frame-handler &optional failed-frame-handler)
   "Reads frames from the input stream and calls frame-handler for each frame read."
   (let ((new-byte 0)
         (new-bit 0)
@@ -73,9 +73,17 @@
            (call-handler ()
              (when (rest result)
                ;; TODO: Parse frame header, check FCS
-               ;; Unstuff bits and call frame handler
-               (print "Calling Handler")
-               (funcall frame-handler (unstuff-bits (reverse (rest result))))
+               (let*
+                   ;; Unstuff bits
+                   ((unstuffed (reverse (unstuff-bits (reverse (rest result)))))
+                    ;; Get FCS
+                    (fcs-bytes (list (second unstuffed) (first unstuffed)))
+                    ;; Get Frame
+                    (frame-bytes (reverse (rest (rest unstuffed)))))
+                 (if (equal fcs-bytes (fcs frame-bytes))
+                     (funcall frame-handler frame-bytes)
+                     (if failed-frame-handler
+                         (funcall failed-frame-handler frame-bytes))))
                ;; Clear results
                (setf result '()))))
       (do ((byte (read-byte in nil)
