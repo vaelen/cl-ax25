@@ -57,6 +57,21 @@
      (setf (ldb (byte 1 new-bit) new-byte) 1)
      (unstuff-bits bytes current-byte (+ 1 current-bit) new-byte (+ 1 new-bit) (+ 1 one-count) result))))
 
+(defun bytes-to-frame (bytes)
+  "Reads an AX.25 frame from the given byte array."
+  (flet ((read-address (bytes)
+           (bytes-to-string bytes :shift -1))
+         (read-ssid (b) (ldb (byte 4 1) b)))
+    (let ((frame (make-frame)))
+      (setf (frame-source frame) (read-address (subseq bytes 0 6)))
+      (setf (frame-source-ssid frame) (read-ssid (first (subseq bytes 6 7))))
+      (setf (frame-destination frame) (read-address (subseq bytes 7 13)))
+      ;; TODO: Support more than two address fields
+      (setf (frame-destination-ssid frame) (read-ssid (first (subseq bytes 13 14))))
+      ;; TODO: Parse Control and PID
+      (setf (frame-data frame) (subseq bytes 16))
+      frame)))
+
 (defun read-frames (in frame-handler &optional failed-frame-handler)
   "Reads frames from the input stream and calls frame-handler for each frame read."
   (let ((new-byte 0)
@@ -72,7 +87,6 @@
              (setf new-bit 0))
            (call-handler ()
              (when (rest result)
-               ;; TODO: Parse frame header, check FCS
                (let*
                    ;; Unstuff bits
                    ((unstuffed (reverse (unstuff-bits (reverse (rest result)))))
@@ -81,9 +95,9 @@
                     ;; Get Frame
                     (frame-bytes (reverse (rest (rest unstuffed)))))
                  (if (equal fcs-bytes (fcs frame-bytes))
-                     (funcall frame-handler frame-bytes)
+                     (funcall frame-handler (bytes-to-frame frame-bytes))
                      (if failed-frame-handler
-                         (funcall failed-frame-handler frame-bytes))))
+                         (funcall failed-frame-handler (bytes-to-frame frame-bytes)))))
                ;; Clear results
                (setf result '()))))
       (do ((byte (read-byte in nil)
@@ -107,13 +121,13 @@
                 (if (not (= 0 new-bit)) (push-byte))
                 (call-handler)))))))))
 
-(defun read-frames-from-file (filename frame-handler)
+(defun read-frames-from-file (filename frame-handler &optional failed-frame-handler)
   "Read AX.25 frames from a file and call frame-handler for each frame"
   (with-open-file (in filename
                        :direction :input
                        :element-type '(unsigned-byte 8))
-    (read-frames in frame-handler)))
+    (read-frames in frame-handler failed-frame-handler)))
 
 (defun print-frame-handler (frame)
   "This frame handler prints out the frame contents to standard out"
-  (format 't "~&~{~c~}" (mapcar #'code-char frame)))
+  (format 't "~&~a" frame))

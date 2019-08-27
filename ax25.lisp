@@ -31,8 +31,10 @@
            :*example-frame*
            :crc16
            :fcs
-           :frame-to-bytes
            :string-to-bytes
+           :bytes-to-string
+           :frame-to-bytes
+           :bytes-to-frame
            :add-flag
            :stuff-bits
            :unstuff-bits
@@ -53,6 +55,11 @@
   "Converts a string to a byte sequence.  Can bit-shift at the same time."
   (flet ((char-to-byte (c) (ash (char-code c) shift)))
     (map 'list #'char-to-byte s)))
+
+(defun bytes-to-string (bytes &key (shift 0))
+  "Converts a byte sequence to a string.  Can bit-shift at the same time."
+  (flet ((byte-to-char (c) (code-char(ash c shift))))
+    (coerce (map 'list #'byte-to-char bytes) 'string)))
 
 (defstruct frame
   "Represents an AX.25 frame."
